@@ -29,14 +29,16 @@ timeline
     : Global placement without placed IOs
     : IO placement  (optimized)
     : Global placement with placed IOs
-    : Resizing and buffering
+    : Resizing and buffering (max cap / max fanout violations)
     : Detailed placement
   CTS : Clock Tree Synthesis
-    : Timing optimization
-    : Filler cell insertion
+    : Resizing and buffering (stup and hold violations )
   Routing
     : Global Routing
+    : Resizing and buffering (max cap / max fanout violations)
+    : Resizing and buffering (stup and hold violations )
     : Detailed Routing
+    : Filler cell insertion
   Finishing
     : Metal Fill insertion
     : Signoff timing report
