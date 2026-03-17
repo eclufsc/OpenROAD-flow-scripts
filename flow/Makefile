@@ -587,6 +587,67 @@ klayout_guides: $(RESULTS_DIR)/5_route.def $(OBJECTS_DIR)/klayout.lyt
 	        -rm $(UTILS_DIR)/viewGuide.py
 
 # ==============================================================================
+#   ____ ____   ____ __  __  ___
+#  / ___|  _ \ / ___|  \/  |/ _ \
+# | |  _  |_) | |   | |\/| | | | |
+# | |_| |  _ <| |__ | |  | | |_| |
+#  \____|_| \_\\____|_|  |_|\___/ 
+#
+
+.PHONY: grcmo_route
+grcmo_route: $(RESULTS_DIR)/5_grcmo.odb \
+       $(RESULTS_DIR)/5_grcmo.sdc
+
+$(eval $(call do-step,5_1_grcmo_grt,$(RESULTS_DIR)/4_cts.odb $(FASTROUTE_TCL),grcmo_flow1))
+
+$(eval $(call do-step,5_2_grcmo_route,$(RESULTS_DIR)/5_1_grcmo_grt.odb,grcmo_detail_route))
+
+$(eval $(call do-step,5_3_grcmo_fillcell,$(RESULTS_DIR)/5_2_grcmo_route.odb,grcmo_fillcell))
+
+$(eval $(call do-copy,5_grcmo,5_3_grcmo_fillcell.odb))
+
+$(eval $(call do-copy,5_grcmo,5_1_grcmo_grt.sdc,,.sdc))
+
+.PHONY: do-grcmo_route
+do-grcmo_route:
+	$(UNSET_AND_MAKE) do-5_1_grcmo_grt do-5_2_grcmo_route do-5_3_grcmo_fillcell do-5_grcmo do-5_grcmo.sdc
+
+
+.PHONY: clean_grcmo_route
+clean_grcmo_route:
+	rm -rf $(RESULTS_DIR)/grcmo_route.guide $(RESULTS_DIR)/output_guide.mod $(RESULTS_DIR)/updated_clks.sdc
+	rm -rf $(RESULTS_DIR)/5_*grcmo*.odb $(RESULTS_DIR)/5_*grcmo*.sdc $(RESULTS_DIR)/5_*grcmo*.def $(RESULTS_DIR)/5_*grcmo*.v
+	rm -f  $(REPORTS_DIR)/5_*grcmo*
+	rm -f  $(LOG_DIR)/5_*grcmo*
+
+.PHONY: grcmo_finish
+grcmo_finish: $(LOG_DIR)/6_grcmo_report.log \
+        $(RESULTS_DIR)/6_grcmo_final.sdc
+	$(UNSET_AND_MAKE) elapsed
+
+$(eval $(call do-step,6_1_grcmo_fill,$(RESULTS_DIR)/5_grcmo.odb $(RESULTS_DIR)/5_grcmo.sdc $(FILL_CONFIG),grcmo_density_fill))
+
+$(eval $(call do-copy,6_1_grcmo_fill,5_grcmo.sdc,,.sdc))
+
+$(eval $(call do-copy,6_grcmo_final,5_grcmo.sdc,,.sdc))
+
+$(eval $(call do-step,6_grcmo_report,$(RESULTS_DIR)/6_1_grcmo_fill.odb $(RESULTS_DIR)/6_1_grcmo_fill.sdc,grcmo_final_report,.log,$(LOG_DIR)))
+
+$(RESULTS_DIR)/6_grcmo_final.def: $(LOG_DIR)/6_grcmo_report.log
+
+# The final results are called 6_final.*, so it is convenient when scripting
+# to have the names of the artifacts match the name of the target
+.PHONY: do-grcmo_final
+do-grcmo_final: do-finish
+
+.PHONY: grcmo_final
+grcmo_final: grcmo_finish
+
+.PHONY: do-grcmo_finish
+do-grcmo_finish:
+	$(UNSET_AND_MAKE) do-6_1_grcmo_fill do-6_1_grcmo_fill.sdc do-6_grcmo_final.sdc do-6_grcmo_report
+
+# ==============================================================================
 #  _____ ___ _   _ ___ ____  _   _ ___ _   _  ____
 # |  ___|_ _| \ | |_ _/ ___|| | | |_ _| \ | |/ ___|
 # | |_   | ||  \| || |\___ \| |_| || ||  \| | |  _
@@ -780,6 +841,7 @@ $(eval $(call OPEN_GUI_SHORTCUT,cts,4_cts.odb))
 $(eval $(call OPEN_GUI_SHORTCUT,route,5_route.odb))
 $(eval $(call OPEN_GUI_SHORTCUT,grt,5_1_grt.odb))
 $(eval $(call OPEN_GUI_SHORTCUT,final,6_final.odb))
+$(eval $(call OPEN_GUI_SHORTCUT,grcmo_final,6_grcmo_final.odb))
 
 $(foreach file,$(RESULTS_DEF),$(eval $(call OPEN_GUI,$(file),DEF_FILE)))
 $(foreach file,$(RESULTS_ODB),$(eval $(call OPEN_GUI,$(file),ODB_FILE)))
