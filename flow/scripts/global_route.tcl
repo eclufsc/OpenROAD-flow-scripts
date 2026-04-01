@@ -27,6 +27,8 @@ proc global_route_helper { } {
 
   set result [catch { do_global_route $res_aware } errMsg]
 
+  report_cell_usage
+
   if { $result != 0 } {
     if { !$::env(GENERATE_ARTIFACTS_ON_FAILURE) } {
       write_db $::env(RESULTS_DIR)/5_1_grt-failed.odb
