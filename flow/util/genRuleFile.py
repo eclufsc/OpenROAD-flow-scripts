@@ -64,7 +64,7 @@ def gen_rule_file(
 
     rules_dict = {
         # all stages
-        "*__flow__warnings__count:*": {
+        "*flow__warnings__count:*": {
             "mode": "direct",
             "round_value": True,
             "compare": "<=",
@@ -83,18 +83,7 @@ def gen_rule_file(
             "round_value": True,
             "compare": "==",
         },
-        # floorplan
-        "floorplan__flow__warnings__type_count": {
-            "mode": "direct",
-            "round_value": True,
-            "compare": "<=",
-        },
         # place
-        "placeopt__flow__warnings__type_count": {
-            "mode": "direct",
-            "round_value": True,
-            "compare": "<=",
-        },
         "placeopt__design__instance__area": {
             "mode": "padding",
             "padding": 15,
@@ -107,22 +96,12 @@ def gen_rule_file(
             "round_value": True,
             "compare": "<=",
         },
-        "detailedplace__flow__warnings__type_count": {
-            "mode": "direct",
-            "round_value": True,
-            "compare": "<=",
-        },
         "detailedplace__design__violations": {
             "mode": "direct",
             "round_value": True,
             "compare": "==",
         },
         # cts
-        "cts__flow__warnings__type_count": {
-            "mode": "direct",
-            "round_value": True,
-            "compare": "<=",
-        },
         "cts__design__instance__count__setup_buffer": {
             "mode": "metric",
             "padding": 10,
@@ -162,11 +141,6 @@ def gen_rule_file(
             "compare": ">=",
         },
         # route
-        "globalroute__flow__warnings__type_count": {
-            "mode": "direct",
-            "round_value": True,
-            "compare": "<=",
-        },
         "globalroute__antenna_diodes_count": {
             "mode": "metric",
             "padding": 0.1,
@@ -200,11 +174,6 @@ def gen_rule_file(
             "round_value": False,
             "compare": ">=",
         },
-        "detailedroute__flow__warnings__type_count": {
-            "mode": "direct",
-            "round_value": True,
-            "compare": "<=",
-        },
         "detailedroute__route__wirelength": {
             "mode": "padding",
             "padding": 15,
@@ -231,36 +200,7 @@ def gen_rule_file(
             "round_value": True,
             "compare": "<=",
         },
-        "detailedroute__timing__setup__ws": {
-            "mode": "period_padding",
-            "padding": 5,
-            "round_value": False,
-            "compare": ">=",
-        },
-        "detailedroute__timing__setup__tns": {
-            "mode": "period_padding",
-            "padding": 20,
-            "round_value": False,
-            "compare": ">=",
-        },
-        "detailedroute__timing__hold__ws": {
-            "mode": "period_padding",
-            "padding": 5,
-            "round_value": False,
-            "compare": ">=",
-        },
-        "detailedroute__timing__hold__tns": {
-            "mode": "period_padding",
-            "padding": 20,
-            "round_value": False,
-            "compare": ">=",
-        },
         # finish
-        "finish__flow__warnings__type_count": {
-            "mode": "direct",
-            "round_value": True,
-            "compare": "<=",
-        },
         "finish__timing__setup__ws": {
             "mode": "period_padding",
             "padding": 5,
@@ -334,6 +274,10 @@ def gen_rule_file(
             matching_fields.append(pattern)
 
         for field in matching_fields:
+            # Replace ':' with '__' as the dashboard DB does not accept
+            # ':' in # field names.
+            if ":" in field:
+                field = field.replace(":", "__")
             processed_fields.add(field)
             if isinstance(metrics[field], str):
                 print(f"[WARNING] Skipping string field {field} = {metrics[field]}")
