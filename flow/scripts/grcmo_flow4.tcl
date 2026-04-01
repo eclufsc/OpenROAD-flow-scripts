@@ -45,10 +45,11 @@ proc global_route_helper { } {
 
 
   set_propagated_clock [all_clocks]
-  estimate_parasitics -global_routing
 
   # Run GRCMO technique.
   rcm::move_rerout
+
+  estimate_parasitics -global_routing
 
   if { [env_var_exists_and_non_empty DONT_USE_CELLS] } {
     set_dont_use $::env(DONT_USE_CELLS)
