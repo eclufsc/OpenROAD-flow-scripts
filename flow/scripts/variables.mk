@@ -117,6 +117,9 @@ YOSYS_IS_VALID := $(if $(YOSYS_EXE),$(shell test -x $(YOSYS_EXE) && echo "true")
 KLAYOUT_DIR = $(abspath $(FLOW_HOME)/../tools/install/klayout/)
 KLAYOUT_BIN_FROM_DIR = $(KLAYOUT_DIR)/klayout
 
+KEPLER_FORMAL_EXE ?= $(abspath $(FLOW_HOME)/../tools/install/kepler-formal/bin/kepler-formal)
+export KEPLER_FORMAL_EXE
+
 ifeq ($(wildcard $(KLAYOUT_BIN_FROM_DIR)), $(KLAYOUT_BIN_FROM_DIR))
 export KLAYOUT_CMD ?= sh -c 'LD_LIBRARY_PATH=$(dir $(KLAYOUT_BIN_FROM_DIR)) $$0 "$$@"' $(KLAYOUT_BIN_FROM_DIR)
 else
@@ -184,6 +187,7 @@ export RESULTS_ODB = $(notdir $(sort $(wildcard $(RESULTS_DIR)/*.odb)))
 export RESULTS_DEF = $(notdir $(sort $(wildcard $(RESULTS_DIR)/*.def)))
 export RESULTS_GDS = $(notdir $(sort $(wildcard $(RESULTS_DIR)/*.gds)))
 export RESULTS_OAS = $(notdir $(sort $(wildcard $(RESULTS_DIR)/*.oas)))
+export RESULTS_V = $(notdir $(sort $(wildcard $(RESULTS_DIR)/*.v)))
 export GDS_MERGED_FILE = $(RESULTS_DIR)/6_1_merged.$(STREAM_SYSTEM_EXT)
 
 define get_variables
@@ -213,17 +217,6 @@ vars:
 	$(UTILS_DIR)/generate-vars.sh $(OBJECTS_DIR)/vars
 
 .PHONY: print-%
-# Print any variable, for instance: make print-DIE_AREA
 print-%:
-  # HERE BE DRAGONS!
-  #
-  # We have to use /tmp. $(OBJECTS_DIR) may not exist
-  # at $(file) expansion time, which is before commands are run
-  # here, so we can't mkdir -p $(OBJECTS_DIR) either
-  #
-  # We have to use $(file ...) because we want to be able
-  # to print variables that contain newlines.
-	$(file >/tmp/print_tmp$$,$($*))
-	@echo -n "$* = "
-	@cat /tmp/print_tmp$$
-	@rm /tmp/print_tmp$$
+	$(info $*: $($*))
+	@true

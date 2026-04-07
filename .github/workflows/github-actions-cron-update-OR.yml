@@ -10,7 +10,7 @@ jobs:
     runs-on: ${{ vars.USE_SELF_HOSTED == 'true' && 'self-hosted' || 'ubuntu-latest' }}
     steps:
       - name: Check out repository code recursively
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
       - name: Pull changes in OpenROAD submodule
@@ -24,7 +24,7 @@ jobs:
           git pull
       - if: "steps.remote-update.outputs.has_update != ''"
         name: Create Draft PR
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ github.token }}
           signoff: true
