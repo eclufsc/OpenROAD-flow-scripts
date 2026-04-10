@@ -18,7 +18,8 @@ proc save_progress { stage } {
 # Run CTS
 set cts_args [list \
   -sink_clustering_enable \
-  -repair_clock_nets]
+  -repair_clock_nets \
+  -apply_ndr none]
 
 append_env_var cts_args CTS_BUF_DISTANCE -distance_between_buffers 1
 append_env_var cts_args CTS_CLUSTER_SIZE -sink_clustering_size 1
