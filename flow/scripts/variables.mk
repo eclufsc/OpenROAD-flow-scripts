@@ -5,6 +5,8 @@
 
 export DESIGN_NICKNAME?=$(DESIGN_NAME)
 
+export EPL_PLACE ?= 0
+
 #-------------------------------------------------------------------------------
 # Setup variables to point to other location for the following sub directory
 # - designs - default is under current directory

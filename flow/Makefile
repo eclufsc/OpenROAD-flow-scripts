@@ -83,6 +83,8 @@
 #DESIGN_CONFIG=./designs/ihp-sg13g2/riscv32i/config.mk
 #DESIGN_CONFIG=./designs/ihp-sg13g2/i2c-gpio-expander/config.mk
 
+export EPL_PLACE ?= 0
+
 # Default design
 DESIGN_CONFIG ?= ./designs/nangate45/gcd/config.mk
 export DESIGN_CONFIG
