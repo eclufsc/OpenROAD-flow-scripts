@@ -1,5 +1,7 @@
-# settings.mk is not under source control. Put variables into this
-# file to avoid having to adding the to the make command line.
+# Put variables into this file to avoid having to adding
+# the to the make command line.
+#
+# Out of ORFS trees can have their own settings.mk.
 -include settings.mk
 
 # ==============================================================================
@@ -227,7 +229,7 @@ $(WRAPPED_LIBS):
 # |____/ |_| |_| \_| |_| |_| |_|_____|____/___|____/
 #
 .PHONY: synth
-synth: $(RESULTS_DIR)/1_synth.v
+synth: $(RESULTS_DIR)/1_synth.odb
 
 .PHONY: synth-report
 synth-report: synth
@@ -260,6 +262,7 @@ yosys-dependencies: $(YOSYS_DEPENDENCIES)
 .PHONY: do-yosys
 do-yosys: yosys-dependencies
 	$(SCRIPTS_DIR)/synth.sh $(SYNTH_SCRIPT) $(LOG_DIR)/1_2_yosys.log
+	cp $(SDC_FILE) $(RESULTS_DIR)/1_2_yosys.sdc
 
 .PHONY: do-yosys-canonicalize
 do-yosys-canonicalize: yosys-dependencies
@@ -268,17 +271,8 @@ do-yosys-canonicalize: yosys-dependencies
 $(RESULTS_DIR)/1_1_yosys_canonicalize.rtlil: $(YOSYS_DEPENDENCIES)
 	$(UNSET_AND_MAKE) do-yosys-canonicalize
 
-$(RESULTS_DIR)/1_2_yosys.v: $(RESULTS_DIR)/1_1_yosys_canonicalize.rtlil
+$(RESULTS_DIR)/1_2_yosys.v $(RESULTS_DIR)/1_2_yosys.sdc: $(RESULTS_DIR)/1_1_yosys_canonicalize.rtlil
 	$(UNSET_AND_MAKE) do-yosys
-
-.PHONY: do-synth
-do-synth:
-	mkdir -p $(RESULTS_DIR) $(LOG_DIR) $(REPORTS_DIR)
-	cp $(RESULTS_DIR)/1_2_yosys.v $(RESULTS_DIR)/1_synth.v
-
-$(RESULTS_DIR)/1_synth.v: $(RESULTS_DIR)/1_2_yosys.v
-	$(UNSET_AND_MAKE) do-synth
-
 .PHONY: clean_synth
 clean_synth:
 	rm -f $(RESULTS_DIR)/1_* $(RESULTS_DIR)/mem*.json
@@ -395,17 +389,21 @@ endef
 # ==============================================================================
 
 # Custom target to go from synthesis to placement in a single OpenROAD run
-$(eval $(call do-step,1_3_floorplan_to_place, $(RESULTS_DIR)/1_synth.v $(RESULTS_DIR)/1_synth.sdc,floorplan_to_place))
+$(eval $(call do-step,1_3_floorplan_to_place, $(RESULTS_DIR)/1_synth.odb $(RESULTS_DIR)/1_synth.sdc,floorplan_to_place))
+
+$(eval $(call OPEN_GUI_SHORTCUT,yosys,1_2_yosys.v))
 
 .PHONY: floorplan_to_place
-floorplan_to_place: $(RESULTS_DIR)/1_synth.v $(RESULTS_DIR)/1_synth.sdc
+floorplan_to_place: $(RESULTS_DIR)/1_synth.odb $(RESULTS_DIR)/1_synth.sdc
 	$(UNSET_AND_MAKE) do-1_3_floorplan_to_place
 
 # ==============================================================================
 
-$(eval $(call do-step,1_3_synth,$(RESULTS_DIR)/1_synth.v $(RESULTS_DIR)/1_synth.sdc,synth_odb))
+$(eval $(call do-step,1_synth,$(RESULTS_DIR)/1_2_yosys.v $(RESULTS_DIR)/1_2_yosys.sdc $(TECH_LEF) $(SC_LEF) $(ADDITIONAL_LEFS) $(LIB_FILES),synth_odb))
 
-$(eval $(call do-step,2_1_floorplan,$(RESULTS_DIR)/1_synth.v $(RESULTS_DIR)/1_synth.sdc $(TECH_LEF) $(SC_LEF) $(ADDITIONAL_LEFS) $(FOOTPRINT) $(SIG_MAP_FILE) $(FOOTPRINT_TCL) $(LIB_FILES) $(IO_CONSTRAINTS),floorplan))
+$(RESULTS_DIR)/1_synth.sdc: $(RESULTS_DIR)/1_synth.odb
+
+$(eval $(call do-step,2_1_floorplan,$(RESULTS_DIR)/1_synth.odb $(RESULTS_DIR)/1_synth.sdc $(TECH_LEF) $(SC_LEF) $(ADDITIONAL_LEFS) $(FOOTPRINT) $(SIG_MAP_FILE) $(FOOTPRINT_TCL) $(LIB_FILES) $(IO_CONSTRAINTS),floorplan))
 
 $(eval $(call do-copy,2_floorplan,2_1_floorplan.sdc,,.sdc))
 
@@ -415,7 +413,7 @@ $(eval $(call do-step,2_2_floorplan_io,$(RESULTS_DIR)/2_1_floorplan.odb,io_place
 
 # STEP 2: Macro Placement
 #-------------------------------------------------------------------------------
-$(eval $(call do-step,2_3_floorplan_macro,$(RESULTS_DIR)/2_2_floorplan_io.odb $(RESULTS_DIR)/1_synth.v $(RESULTS_DIR)/1_synth.sdc $(MACRO_PLACEMENT) $(MACRO_PLACEMENT_TCL),macro_place))
+$(eval $(call do-step,2_2_floorplan_macro,$(RESULTS_DIR)/2_1_floorplan.odb $(RESULTS_DIR)/1_synth.sdc $(MACRO_PLACEMENT) $(MACRO_PLACEMENT_TCL),macro_place))
 
 # STEP 3: Tapcell and Welltie insertion
 #-------------------------------------------------------------------------------
@@ -787,6 +785,7 @@ $(eval $(call OPEN_GUI_SHORTCUT,final,6_final.odb))
 
 $(foreach file,$(RESULTS_DEF),$(eval $(call OPEN_GUI,$(file),DEF_FILE)))
 $(foreach file,$(RESULTS_ODB),$(eval $(call OPEN_GUI,$(file),ODB_FILE)))
+$(foreach file,$(RESULTS_V),$(eval $(call OPEN_GUI,$(file),V_FILE)))
 
 # Write a def for the corresponding odb
 $(foreach file,$(RESULTS_ODB),$(file).def): %.def:

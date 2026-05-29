@@ -58,3 +58,9 @@ export IO_CONSTRAINTS     = $(DESIGN_HOME)/$(PLATFORM)/swerv_wrapper/io.tcl
 export PLACE_DENSITY_LB_ADDON = 0.20
 
 export ROUTING_LAYER_ADJUSTMENT = 0.2
+
+export SWAP_ARITH_OPERATORS = 1
+export OPENROAD_HIERARCHICAL = 1
+
+export LEC_CHECK = 0
+
