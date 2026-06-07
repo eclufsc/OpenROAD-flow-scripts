@@ -21,7 +21,3 @@ sky130hs/aes
 sky130hs/ibex
 sky130hs/jpeg
 sky130hs/riscv32i
-asap7/swerv_wrapper
-nangate45/black_parrot
-nangate45/ariane136
-sky130hd/microwatt

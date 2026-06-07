@@ -1,3 +1,4 @@
+#%%
 import os
 import re
 import pandas as pd
@@ -40,6 +41,8 @@ for tech, design in designs:
     print(tech, design)
     for variant in os.listdir(os.path.join("logs", tech, design)):
         if variant == 'epl':
+            continue
+        if variant == 'epl2':
             continue
         files = {
             "skip_io": os.path.join("logs", tech, design, variant, "3_1_place_gp_skip_io.log"),
@@ -87,18 +90,22 @@ def get_fmax(file):
         data = json.load(file)
     timing_fmax = "OK"
     for key in data:
+        if key == "timeout":
+            if data[key] != 0:
+                return "TIMEOUT"
         if key.endswith("errors__count"):
             if data[key] != 0:
-                return "FAILED"
+                timing_fmax = "FAILED"
         if key.endswith("timing__fmax"):
-            timing_fmax = data[key]
+            if timing_fmax != "FAILED":
+                timing_fmax = data[key]
     return timing_fmax
 fmax_data = data.set_index(["tech", "design", "variant"]).sort_index(ascending=[True, True, False])
 fmax_data = fmax_data.map(get_fmax)
 fmax_data.to_csv("results/fmax_data.csv")
 print(fmax_data)
         
-
+#%%
 def process_gp_log(filename):
     final_hpwl = None
     final_area = None
@@ -267,10 +274,58 @@ def process_dpl_log(filename):
         "cpu_time_sys": cpu_time_sys,
         "peak_memory": peak_memory,
     }
+    
+def process_final_log(filename):
+    cpu_time_user = None
+    cpu_time_sys = None
+    peak_memory = None
+
+    if filename:
+        with open(filename, "r") as f:
+            for line in f:
+                if line.startswith("Elapsed time:"):
+                    if cpu_time_user:
+                        raise ValueError(
+                            f"cpu_time_user is already {cpu_time_user}. File: {filename}"
+                        )
+                    cpu_time_user = float(line.split()[6].strip())
+                    if cpu_time_sys:
+                        raise ValueError(
+                            f"cpu_time_sys is already {cpu_time_sys}. File: {filename}"
+                        )
+                    cpu_time_sys = float(line.split()[8].strip())
+                    if peak_memory:
+                        raise ValueError(
+                            f"peak_memory is already {peak_memory}. File: {filename}"
+                        )
+                    peak_memory = line.split()[-1].strip()[:-1]
+
+    data = {}
+    json_file = filename[:-3]+"json" if filename else ""
+    if os.path.isfile(json_file):
+        with open(json_file) as file:
+            data = json.load(file)
+    get_value = lambda key: data[key] if key in data else None
+    return {
+        "setup_tns": get_value("finish__timing__setup__tns"),
+        "setup_ws": get_value("finish__timing__setup__ws"),
+        "hold_tns": get_value("finish__timing__hold__tns"),
+        "hold_ws": get_value("finish__timing__hold__ws"),
+        "fmax": get_value("finish__timing__fmax"),
+        "power": get_value("finish__power__total"),
+        "utilization": get_value("finish__design__instance__utilization"),
+        "stdcell_count": get_value("finish__design__instance__count__stdcell"),
+        "macro_count": get_value("finish__design__instance__count__macros"),
+        "area": get_value("finish__design__instance__area"),
+        "cpu_time_user": cpu_time_user,
+        "cpu_time_sys": cpu_time_sys,
+        "peak_memory": peak_memory,
+    }
 
 skip_io_data = []
 place_gp_data = []
 place_dp_data = []
+final_data = []
 for file in data.itertuples(False):
     skip_io_data.append(process_gp_log(file.skip_io))
     skip_io_data[-1]["variant"] = file.variant
@@ -286,6 +341,11 @@ for file in data.itertuples(False):
     place_dp_data[-1]["variant"] = file.variant
     place_dp_data[-1]["tech"] = file.tech
     place_dp_data[-1]["design"] = file.design
+    
+    final_data.append(process_final_log(file.final))
+    final_data[-1]["variant"] = file.variant
+    final_data[-1]["tech"] = file.tech
+    final_data[-1]["design"] = file.design
 
 skip_io_df = pd.DataFrame(skip_io_data).set_index(["tech", "design", "variant"]).sort_index(ascending=[True, True, False])
 skip_io_df.to_csv("./results/skip_io.csv")
@@ -296,6 +356,9 @@ print(place_gp_df)
 place_dp_df = pd.DataFrame(place_dp_data).set_index(["tech", "design", "variant"]).sort_index(ascending=[True, True, False])
 place_dp_df.to_csv("./results/place_dp.csv")
 print(place_dp_df)
+final_df = pd.DataFrame(final_data).set_index(["tech", "design", "variant"]).sort_index(ascending=[True, True, False])
+final_df.to_csv("./results/final.csv")
+print(final_df)
 
 def generate_diff(df):
     ref = df[df.index.get_level_values('variant') == 'ref']
@@ -325,3 +388,5 @@ place_gp_df_diff = place_gp_df.groupby(["tech", "design"], group_keys=False).app
 place_gp_df_diff.to_csv("./results/place_gp_diff.csv")
 place_dp_df_diff = place_dp_df.groupby(["tech", "design"], group_keys=False).apply(generate_diff)
 place_dp_df_diff.to_csv("./results/place_dp_diff.csv")
+final_df_diff = final_df.groupby(["tech", "design"], group_keys=False).apply(generate_diff)
+final_df_diff.to_csv("./results/final_diff.csv")
